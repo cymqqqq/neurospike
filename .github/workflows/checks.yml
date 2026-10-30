@@ -1,0 +1,42 @@
+name: Checks and macOS application
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      QT_QPA_PLATFORM: offscreen
+      MPLBACKEND: Agg
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: python -m pip install -e '.[dev]'
+      - run: ruff check src tests scripts
+      - run: ruff format --check src tests scripts
+      - run: python -m pytest -q
+      - run: python -m build
+      - name: Package current macOS architecture
+        if: runner.os == 'macOS'
+        run: python scripts/build_macos.py
+      - name: Zip application bundle
+        if: runner.os == 'macOS'
+        run: ditto -c -k --keepParent dist/NeuroSpike.app dist/NeuroSpike-macOS.zip
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'macOS'
+        with:
+          name: NeuroSpike-macOS
+          path: dist/NeuroSpike-macOS.zip
