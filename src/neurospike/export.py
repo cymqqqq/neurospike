@@ -14,6 +14,7 @@ from pathlib import Path
 from . import __version__
 from .analysis import AnalysisResult, Spike
 from .methods import METHOD_VERSION, method_manifest
+from .review import detection_review
 
 
 def _write_csv(path, rows, columns):
@@ -68,7 +69,7 @@ def save_review_plot(results, path):
             [s.peak_mv for s in result.spikes],
             c="#e27836",
             s=14,
-            label="Accepted peaks",
+            label="Retained candidates",
             zorder=3,
         )
         threshold_spikes = [s for s in result.spikes if s.threshold_mv is not None]
@@ -84,15 +85,16 @@ def save_review_plot(results, path):
         ax.set(
             ylabel="mV",
             xlabel="Time (s)",
-            title=f"Sweep {trace.sweep} | {len(result.spikes)} AP | "
+            title=f"{Path(trace.source).name} | sweep {trace.sweep} (0-based) | "
+            f"{len(result.spikes)} candidates | "
             f"{result.summary['firing_rate_hz']:.3g} Hz",
         )
         ax.legend(loc="upper right", fontsize=7)
-    fig.suptitle("NeuroSpike review — first 12 sweeps maximum; CSV contains all results")
+    fig.suptitle("NeuroSpike review — raw trace and processed-signal event markers")
     fig.savefig(path, dpi=130)
 
 
-def export_bundle(results: list[AnalysisResult], destination):
+def export_bundle(results: list[AnalysisResult], destination, *, sensitivity_review=False):
     if not results:
         raise ValueError("没有分析结果可以导出。")
     destination = Path(destination).resolve()
@@ -112,12 +114,39 @@ def export_bundle(results: list[AnalysisResult], destination):
             source = r.trace.source
             if source not in sources:
                 sources[source] = _sha256(Path(source)) if Path(source).is_file() else None
+        review_pages = []
+        for start in range(0, len(results), 12):
+            filename = "review.png" if start == 0 else f"review-{start // 12 + 1:03d}.png"
+            page = results[start : start + 12]
+            save_review_plot(page, staging / filename)
+            review_pages.append(
+                {
+                    "file": filename,
+                    "analyses": [
+                        {
+                            "source": r.trace.source,
+                            "sweep": r.trace.sweep,
+                            "channel": r.trace.channel,
+                        }
+                        for r in page
+                    ],
+                }
+            )
+        if sensitivity_review:
+            (staging / "detection-review.json").write_text(
+                json.dumps(
+                    detection_review(results), ensure_ascii=False, indent=2, allow_nan=False
+                ),
+                encoding="utf-8",
+            )
         metadata = {
             "software": "NeuroSpike",
             "software_version": __version__,
             "method_version": METHOD_VERSION,
             "method_manifest": method_manifest(),
             "analysis_code_sha256": _sha256(Path(__file__).with_name("analysis.py")),
+            "review_pages": review_pages,
+            "detection_review_file": "detection-review.json" if sensitivity_review else None,
             "created_utc": datetime.now(timezone.utc).isoformat(),
             "python": platform.python_version(),
             "dependencies": {name: version(name) for name in ("numpy", "scipy", "pyabf")},
@@ -138,11 +167,11 @@ def export_bundle(results: list[AnalysisResult], destination):
         (staging / "analysis.json").write_text(
             json.dumps(metadata, ensure_ascii=False, indent=2, allow_nan=False), encoding="utf-8"
         )
-        save_review_plot(results, staging / "review.png")
         (staging / "说明.txt").write_text(
             "spikes.csv：逐个动作电位；sweeps.csv：逐个 sweep。\n"
             "analysis.json：参数、手动排除、警告、源文件哈希、方法定义/依据和分析代码哈希。\n"
-            "review.png：最多前 12 个 sweep 的概览，不能替代放大检查。\n"
+            "review.png 及 review-*.png：所有 sweep 分页概览，每页最多 12 条；索引在 analysis.json。\n"
+            "检测敏感性报告（如启用）只提供待复核候选，不自动修改结果，不代表人工真值。\n"
             "空白值表示该项无法测量，不代表零。flags 为质量提示，带提示的波形仍计入，除非手动排除。\n"
             "本软件没有自动识别刺激伪迹或读取刺激电流，潜伏期相对于手动分析起点。\n"
             "同一细胞的多个 sweep 不代表多个独立样本。详细定义请查看项目 docs/measurement-definitions.md。\n",

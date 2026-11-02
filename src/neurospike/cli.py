@@ -1,18 +1,23 @@
 """Headless analysis interface and desktop entry point."""
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
 from .analysis import AnalysisConfig, analyze
 from .demo import demo_recording
 from .export import export_bundle
-from .io import load_recording
+from .io import abf_protocol_metadata, load_recording
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="NeuroSpike 动作电位分析（本地、离线）")
     sub = parser.add_subparsers(dest="command")
+    inspect_parser = sub.add_parser(
+        "inspect", help="检查 ABF2 所有启用的 DAC 协议，不自动选择分析窗"
+    )
+    inspect_parser.add_argument("file", type=Path)
     analyze_parser = sub.add_parser("analyze", help="分析一个或多个文件")
     analyze_parser.add_argument("files", nargs="+", type=Path)
     demo_parser = sub.add_parser("demo", help="分析已知事件的合成演示记录")
@@ -29,6 +34,11 @@ def main(argv=None):
         item.add_argument("--lookback", type=float, default=5)
         item.add_argument("--ahp-window", type=float, default=20)
         item.add_argument("--smooth", type=float, default=0)
+        item.add_argument(
+            "--sensitivity-review",
+            action="store_true",
+            help="另存检测参数敏感性报告；不更改主分析结果",
+        )
     analyze_parser.add_argument("--channel", type=int, default=0, help="ABF 通道，从 0 开始")
     analyze_parser.add_argument("--time-unit", choices=["s", "ms"])
     analyze_parser.add_argument("--voltage-unit", choices=["mV", "V", "uV"])
@@ -39,6 +49,9 @@ def main(argv=None):
 
         return gui_main()
     try:
+        if args.command == "inspect":
+            print(json.dumps(abf_protocol_metadata(args.file), ensure_ascii=False, indent=2))
+            return 0
         config = AnalysisConfig(
             start_s=args.start,
             end_s=args.end,
@@ -66,7 +79,7 @@ def main(argv=None):
             ]
         )
         results = [analyze(trace, config) for recording in recordings for trace in recording.traces]
-        output = export_bundle(results, args.output)
+        output = export_bundle(results, args.output, sensitivity_review=args.sensitivity_review)
         for result in results:
             print(
                 f"{Path(result.trace.source).name} sweep={result.trace.sweep}: "

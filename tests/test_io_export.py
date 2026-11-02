@@ -1,7 +1,7 @@
 import csv
 import hashlib
 import json
-from dataclasses import fields
+from dataclasses import fields, replace
 from pathlib import Path
 
 import numpy as np
@@ -13,8 +13,9 @@ from neurospike.analysis import AnalysisConfig, Spike, analyze
 from neurospike.cli import main
 from neurospike.demo import demo_recording
 from neurospike.export import export_bundle
-from neurospike.io import abf_channels, load_recording
+from neurospike.io import abf_channels, abf_protocol_metadata, load_recording
 from neurospike.methods import method_manifest
+from neurospike.review import detection_review
 
 
 def test_real_abf_binary_round_trip_with_scaling_and_sweeps(tmp_path):
@@ -155,6 +156,34 @@ def test_cli_end_to_end_and_error_status(tmp_path):
     assert main(["analyze", str(tmp_path / "missing.abf"), "--output", str(tmp_path / "bad")]) == 2
 
 
+def test_export_paginates_all_sweeps_and_preserves_default_counts(tmp_path):
+    result = analyze(demo_recording().traces[0])
+    results = [replace(result, trace=replace(result.trace, sweep=i)) for i in range(13)]
+    destination = export_bundle(results, tmp_path / "pages", sensitivity_review=True)
+    meta = json.loads((destination / "analysis.json").read_text())
+    assert [p["file"] for p in meta["review_pages"]] == ["review.png", "review-002.png"]
+    assert [a["sweep"] for p in meta["review_pages"] for a in p["analyses"]] == list(range(13))
+    for page in meta["review_pages"]:
+        assert (destination / page["file"]).stat().st_size > 1000
+    review = json.loads((destination / meta["detection_review_file"]).read_text())
+    assert len(review["analyses"]) == 13
+    assert all(a["original_spike_count"] == 3 for a in review["analyses"])
+    assert all(a["summary"]["spike_count"] == 3 for a in meta["analyses"])
+
+
+def test_sensitivity_finds_low_amplitude_candidates_without_changing_primary_result():
+    trace = demo_recording().traces[0]
+    # Compress peak-to-baseline voltage so spikes fail the -20 mV primary cutoff.
+    weak = replace(trace, voltage_mv=-65 + (trace.voltage_mv + 65) * 0.4)
+    result = analyze(weak)
+    assert not result.spikes
+    comparison = detection_review([result])["analyses"][0]["comparisons"]
+    assert comparison["lower_height_prominence"]["spike_count"] > 0
+    assert not result.spikes
+    excluded = analyze(trace, AnalysisConfig(excluded_peak_times_s=(0.1,)))
+    assert detection_review([excluded])["analyses"][0]["status"] == "skipped_manual_exclusions"
+
+
 def test_csv_formula_injection_guard(tmp_path):
     path = tmp_path / "=unsafe.csv"
     path.write_text("time_s,=label_mV\n" + "\n".join(f"{i / 1000},-65" for i in range(10)))
@@ -162,3 +191,47 @@ def test_csv_formula_injection_guard(tmp_path):
     output = export_bundle([result], tmp_path / "safe")
     with (output / "sweeps.csv").open(encoding="utf-8-sig") as f:
         assert next(csv.DictReader(f))["label"] == "'=label_mV"
+
+
+def test_protocol_inspection_finds_enabled_unrecorded_dac(monkeypatch):
+    from types import SimpleNamespace
+
+    import pyabf.waveform
+
+    fake = SimpleNamespace(
+        abfVersion={"major": 2},
+        abfVersionString="2.6.0.0",
+        protocol="test",
+        dataRate=20000,
+        sweepCount=2,
+        dacUnits=["mV"],
+        _dacSection=SimpleNamespace(nWaveformEnable=[0, 0, 0, 1], nWaveformSource=[1, 1, 1, 1]),
+    )
+    monkeypatch.setattr(pyabf, "ABF", lambda *a, **k: fake)
+
+    def table(abf, dac):
+        assert dac == 3  # The recorded ADC index must not select the stimulus DAC.
+        return SimpleNamespace(
+            epochWaveformsBySweep=[
+                SimpleNamespace(
+                    p1s=[0, 2812, 12812],
+                    p2s=[2812, 12812, 20000],
+                    levels=[0, level, 0],
+                    types=["Step"] * 3,
+                )
+                for level in [-20, 0]
+            ]
+        )
+
+    monkeypatch.setattr(pyabf.waveform, "EpochTable", table)
+    info = abf_protocol_metadata("unused.abf")
+    dac = info["enabled_dacs"][0]
+    assert dac["dac_index"] == 3 and dac["level_unit"] is None
+    segment = dac["sweeps"][0]["segments"][1]
+    assert segment["start_s"] == pytest.approx(0.1406)
+    assert segment["end_s"] == pytest.approx(0.6406)
+    assert segment["level"] == -20
+    fake._dacSection.nWaveformSource[3] = 2
+    assert abf_protocol_metadata("unused.abf")["enabled_dacs"][0]["status"] == (
+        "unsupported_external_waveform"
+    )

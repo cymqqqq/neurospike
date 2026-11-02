@@ -34,3 +34,10 @@ macOS 14.3.1，Apple M1 Pro 上的 x86_64 Python 3.12.4（Rosetta 进程）。Py
 没有用户自己的 ABF 样本，尚未做实验协议适配、与人工标注逐事件比较、液接电位修正或与 Clampfit 输出对照。没有自动读取刺激电流和刺激时序。正式统计前应在代表性实验 sweep 上复核事件与阈值，并选择统一的参数和质量控制规则。
 
 GitHub CI 状态以该仓库 Actions 页面实时结果为准，本记录不把本地通过等同于远端 CI 通过。
+
+
+## Follow-up with user-supplied ABF2 recordings (2026-11-02)
+
+Two local laboratory ABF2 recordings exercised loading, all-sweep analysis, parameter sensitivity and exports. Raw files, experiment-derived results/plots, protocol paths and cell identifiers are not committed. These executions test integration; no manually annotated event/parameter truth is available, so they do not establish precision, recall or Clampfit equivalence.
+
+This follow-up identified and addressed two review gaps: all sweeps now have paginated PNGs and page-to-source indexes; optional `--sensitivity-review` reports alternative candidate counts/times without altering primary measurements. The `inspect` command checks enabled ABF2 DACs independently of the ADC index, because a stimulated DAC can differ from the recorded ADC. Header levels remain uncalibrated command values and unknown units remain unknown. No automatic current/stimulus-window selection was added. Regression fixtures reproduce these failure modes using synthetic data/mocked header structures; private recordings are not CI dependencies.

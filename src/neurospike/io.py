@@ -12,6 +12,80 @@ VOLTAGE_FACTORS = {"mv": 1.0, "v": 1000.0, "uv": 0.001, "µv": 0.001, "μv": 0.0
 TIME_FACTORS = {"s": 1.0, "ms": 0.001}
 
 
+def abf_protocol_metadata(path):
+    """Inspect enabled ABF2 DACs independently of the selected ADC channel.
+
+    pyABF setSweep(channel=...) associates ADC and DAC by index. Real files
+    may record ADC 0 while stimulating DAC 3. Header epoch timing is useful,
+    but DAC levels are not calibrated measured currents and units may be absent.
+    """
+    import pyabf
+    from pyabf.waveform import EpochTable
+
+    abf = pyabf.ABF(str(path), loadData=False)
+    info = {
+        "abf_version": abf.abfVersionString,
+        "protocol_name": abf.protocol,
+        "sample_rate_hz": abf.dataRate,
+        "sweep_count": abf.sweepCount,
+        "enabled_dacs": [],
+        "warnings": [],
+    }
+    if abf.abfVersion["major"] != 2:
+        info["warnings"].append("Enabled-DAC inspection currently supports ABF2 only.")
+        return info
+    for dac, enabled in enumerate(abf._dacSection.nWaveformEnable):
+        if not enabled:
+            continue
+        entry = {
+            "dac_index": dac,
+            "waveform_source": abf._dacSection.nWaveformSource[dac],
+            "level_unit": None,
+            "sweeps": [],
+        }
+        # pyABF's public DAC name/unit arrays may omit unrecorded outputs. Do
+        # not borrow the recorded ADC's units or guess pA from a protocol name.
+        if dac < len(abf.dacUnits):
+            entry["level_unit"] = abf.dacUnits[dac]
+        if entry["waveform_source"] != 1:
+            entry["status"] = "unsupported_external_waveform"
+            info["warnings"].append(f"DAC {dac}: external waveform not reconstructed.")
+        else:
+            try:
+                table = EpochTable(abf, dac)
+                for sweep, waveform in enumerate(table.epochWaveformsBySweep):
+                    entry["sweeps"].append(
+                        {
+                            "sweep": sweep,
+                            "segments": [
+                                {
+                                    "start_s": p1 / abf.dataRate,
+                                    "end_s": p2 / abf.dataRate,
+                                    "level": float(level),
+                                    "type": kind,
+                                }
+                                for p1, p2, level, kind in zip(
+                                    waveform.p1s,
+                                    waveform.p2s,
+                                    waveform.levels,
+                                    waveform.types,
+                                    strict=True,
+                                )
+                            ],
+                        }
+                    )
+                entry["status"] = "header_epochs_reconstructed"
+            except (ValueError, IndexError, AttributeError, AssertionError) as exc:
+                entry["status"] = "reconstruction_failed"
+                entry["error"] = str(exc)
+        info["enabled_dacs"].append(entry)
+    info["warnings"].append(
+        "Header commands are not measured stimulus current; verify units, amplifier scaling "
+        "and timing against the experimental protocol. No analysis window selected automatically."
+    )
+    return info
+
+
 def abf_channels(path):
     import pyabf
 

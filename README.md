@@ -46,7 +46,7 @@ Default detection settings are a minimum peak of −20 mV, prominence of 20 mV, 
 - `spikes.csv`: one row per retained event. Empty values mean unavailable measurements, not zero. Quality flags do not automatically exclude events.
 - `sweeps.csv`: one row per analyzed sweep, with analysis windows, baseline, counts, firing rate, metric means, and valid measurement counts.
 - `analysis.json`: software/method/dependency versions, parameters, excluded peak times, warnings, summaries, source-file SHA256 hashes, the complete metric method/citation manifest, and the analysis module SHA256. It contains local paths; review these before sharing.
-- `review.png`: an overview of at most the first 12 analyzed sweeps. The CSV files contain all analyzed sweeps. Long traces use extrema-preserving downsampling; the overview does not replace detailed waveform review.
+- `review.png` and `review-*.png`: paginated overviews covering every analyzed sweep, up to 12 per page. `analysis.json` maps pages to source/sweep/channel. Long traces use extrema-preserving downsampling; the overview does not replace detailed waveform review.
 
 The built-in export records software and method versions, but not the Git commit. For reproducible agent-run analyses, also save the repository commit, relevant uncommitted changes or script snapshot, environment, and execution details with the results.
 
@@ -71,6 +71,7 @@ Dependencies are declared in `pyproject.toml`. Qt remains part of the current in
 ### Command-line analysis
 
 ```bash
+neurospike inspect /path/to/cell.abf
 neurospike demo --output results/demo
 neurospike analyze /path/to/cell.abf --channel 0 --start 0.1 --end 0.6 \
   --baseline-start 0 --baseline-end 0.05 --output results/cell
@@ -81,6 +82,8 @@ neurospike analyze /path/to/data.csv --time-unit ms --voltage-unit mV --output r
 Use an explicit `analyze` or `demo` subcommand for headless execution. Running `neurospike` without a subcommand launches the retained GUI. Current CLI messages and desktop labels are in Chinese; selecting the English README does not change application language.
 
 Analysis and baseline windows are in seconds. `--refractory`, `--lookback`, `--ahp-window`, and `--smooth` use milliseconds; `--dvdt` uses mV/ms. ABF channels are zero-indexed. The output directory must not already exist. A multi-file invocation fails as a whole on invalid input; it does not silently skip failed files. Shared windows and settings must be valid for every selected sweep.
+
+Use `--sensitivity-review` to add `detection-review.json`: it compares a lower height/prominence preset and 0.15 ms Savitzky–Golay smoothing with the primary detector, recording candidate counts and unmatched times. It does not alter primary measurements or estimate accuracy. Manual exclusions skip comparison because filtering can shift event times. `neurospike inspect` examines every enabled ABF2 DAC independently of the recorded ADC index. An ADC 0 voltage recording may use DAC 3 for stimulation; the default pyABF command for ADC 0 can then be flat. The inspection reports header epoch timing/levels, unsupported waveform sources and unknown units without selecting an analysis window or interpreting DAC levels as measured current. Protocol names alone are insufficient to recover stimulus timing/current.
 
 ### Python API
 
@@ -110,7 +113,7 @@ Existing `NeuroSpike.app` bundles require a compatible macOS version and archite
 
 ## Scope and validation limits
 
-NeuroSpike currently analyzes current-clamp voltage signals. It does not control acquisition hardware or implement a complete pCLAMP replacement. Automatic stimulus-current parsing, stimulus-artifact identification, liquid junction potential correction, rheobase, input resistance, membrane capacitance, f–I curves, and cell/group-level statistical testing are not implemented.
+NeuroSpike currently analyzes current-clamp voltage signals. It does not control acquisition hardware or implement a complete pCLAMP replacement. Calibrated stimulus-current analysis, automatic stimulus-artifact identification, liquid junction potential correction, rheobase, input resistance, membrane capacitance, f–I curves, and cell/group-level statistical testing are not implemented.
 
 The initial implementation passed 37 automated tests, known-waveform checks, ABF1 round-trip tests, public ABF2 loading checks, and headless Qt/export checks. Public ABF2 event counts are execution results without manually annotated ground truth. No user laboratory recordings have yet been compared event by event with manual annotation or Clampfit. Review representative experimental sweeps and use consistent methods before interpreting scientific results.
 
@@ -126,4 +129,4 @@ python -m build
 
 [GitHub Actions](https://github.com/cymqqqq/neurospike/actions) runs checks and tests on Linux and macOS. The existing macOS job additionally packages the application, exercises ABF loading and CSV/JSON/PNG export in a headless smoke test, and stores the bundle as an Actions artifact. It does not publish a release or deploy a service.
 
-Module responsibilities and the initial acceptance scope are described in the [design record (Chinese)](docs/implementation-plan.md). That record describes the initial desktop-oriented release; the current analysis-first direction is documented here. The repository is private and has no open-source license grant.
+Module responsibilities and the initial acceptance scope are described in the [design record (Chinese)](docs/implementation-plan.md). That record describes the initial desktop-oriented release; the current analysis-first direction is documented here. The repository is public. Public visibility does not grant an open-source license; no license has been added.

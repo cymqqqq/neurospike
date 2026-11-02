@@ -45,7 +45,7 @@
 - `spikes.csv`：每行一个保留事件。空白表示无法测量，不是零；质量标记不会自动剔除事件。
 - `sweeps.csv`：每行一个已分析 sweep，包含分析区间、基线、数量、发放率及各指标均值和有效数量。
 - `analysis.json`：软件/方法/依赖版本、参数、排除峰值时间、警告、汇总、输入 SHA256、完整指标方法/引用清单和分析内核 SHA256。包含本地路径，共享前应检查。
-- `review.png`：最多前 12 个已分析 sweep 的概览，CSV 始终包含所有已分析 sweep。长记录使用保留极值的降采样，不能替代详细波形复核。
+- `review.png` 与 `review-*.png`：覆盖所有已分析 sweep 的分页概览，每页最多 12 条；`analysis.json` 保存页面与文件/sweep/通道索引。长记录使用保留极值的降采样，不能替代详细波形复核。
 
 当前内置导出记录软件和方法版本，尚不自动记录 Git commit。代理执行分析时应额外保存仓库提交号、影响计算的未提交修改或脚本快照、环境及执行信息。
 
@@ -70,6 +70,7 @@ python -m pip install -e .
 ### 命令行分析
 
 ```bash
+neurospike inspect /path/to/cell.abf
 neurospike demo --output results/demo
 neurospike analyze /path/to/cell.abf --channel 0 --start 0.1 --end 0.6 \
   --baseline-start 0 --baseline-end 0.05 --output results/cell
@@ -80,6 +81,8 @@ neurospike analyze /path/to/data.csv --time-unit ms --voltage-unit mV --output r
 无界面运行时必须显式使用 `analyze` 或 `demo` 子命令；直接运行 `neurospike` 会启动保留的 GUI。目前 CLI 提示和界面标签为中文；默认英文 README 不会改变应用语言。
 
 分析区间和基线区间单位为秒；`--refractory`、`--lookback`、`--ahp-window`、`--smooth` 单位为毫秒，`--dvdt` 为 mV/ms。ABF 通道从 0 开始。输出目录必须不存在。多文件调用遇到无效输入时整体失败，不悄悄跳过文件。共用区间和参数必须适用于每个选中的 sweep。
+
+使用 `--sensitivity-review` 可额外生成 `detection-review.json`，比较较低峰高/突出度预设及 0.15 ms Savitzky–Golay 平滑的检出数量和未匹配峰时间，不更改主结果，不代表准确率。存在手动排除项时跳过比较，避免滤波移位后误用排除时间。`neurospike inspect` 独立检查所有启用的 ABF2 DAC：记录 ADC 0 不代表刺激也在 DAC 0，DAC 3 刺激时常规命令读取可能为零。检查报告头信息的 epoch 时间/幅值、未知单位和不支持的波形来源，不自动选择分析窗，也不把 DAC 幅值当作实测电流。协议名称不能代替刺激时序/电流证据。
 
 ### Python API
 
@@ -109,7 +112,7 @@ CSV 表头可用 `time_s,sweep0_mV,sweep1_mV`：第一列时间，后续每列�
 
 ## 范围与验证限制
 
-当前分析对象为电流钳电压记录。项目不控制采集硬件，尚未覆盖完整 pCLAMP 功能；未实现刺激电流自动解析、刺激伪迹自动识别、液接电位校正、rheobase、输入电阻、膜电容、f–I 曲线及细胞/组级统计检验。
+当前分析对象为电流钳电压记录。项目不控制采集硬件，尚未覆盖完整 pCLAMP 功能；未实现校准刺激电流分析、刺激伪迹自动识别、液接电位校正、rheobase、输入电阻、膜电容、f–I 曲线及细胞/组级统计检验。
 
 首版通过 37 项自动测试、已知波形测量、ABF1 往返读取、公开 ABF2 读取及无窗口 Qt/导出检查。公开 ABF2 的事件数是程序运行结果，没有人工标注真值；尚未用用户实验室数据与人工标注或 Clampfit 逐事件对照。科学解释前应复核代表性 sweep，并采用一致方法。
 
@@ -125,4 +128,4 @@ python -m build
 
 [GitHub Actions](https://github.com/cymqqqq/neurospike/actions) 在 Linux、macOS 执行检查和测试；已有 macOS 任务还会打包应用，无窗口验证 ABF 读取与 CSV/JSON/PNG 导出，并保存 Actions artifact，不公开发布 Release 或部署服务。
 
-模块职责和首版验收范围见 [设计记录](docs/implementation-plan.md)。该文件描述最初以桌面为主的版本，当前以直接分析为主的方向以本 README 为准。仓库保持私有，未授予开源许可证。
+模块职责和首版验收范围见 [设计记录](docs/implementation-plan.md)。该文件描述最初以桌面为主的版本，当前以直接分析为主的方向以本 README 为准。仓库现为 public；公开可见不等于授予开源许可证，本次未添加许可证。
