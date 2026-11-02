@@ -1,0 +1,55 @@
+{
+  "retrieved": "2026-11-02",
+  "sources": [
+    {
+      "file": "ipfx_features_pinned.py",
+      "url": "https://raw.githubusercontent.com/AllenInstitute/ipfx/c607a36e25618a6bb8ba5438c1cd945fb429e659/ipfx/spike_features.py",
+      "sha256": "3a78f51678d6164fe727639fae57793be9511cd450fb6731f723e73ab8c9370b"
+    },
+    {
+      "file": "ipfx_detector_pinned.py",
+      "url": "https://raw.githubusercontent.com/AllenInstitute/ipfx/c607a36e25618a6bb8ba5438c1cd945fb429e659/ipfx/spike_detector.py",
+      "sha256": "f977641108b94c524bdb5f050ccdfc63de97755d5db905acf34e1f85aa205282"
+    },
+    {
+      "file": "ipfx_train_pinned.py",
+      "url": "https://raw.githubusercontent.com/AllenInstitute/ipfx/c607a36e25618a6bb8ba5438c1cd945fb429e659/ipfx/spike_train_features.py",
+      "sha256": "17751c324e50b2e116db7e4f66cb977c7d0cbe7cb206fa2702355532a45b09c1"
+    },
+    {
+      "file": "efel_cpp_pinned.cpp",
+      "url": "https://raw.githubusercontent.com/BlueBrain/eFEL/1b6c129dd0de1e782ee70777a92d642898af28b5/efel/cppcore/SpikeEvent.cpp",
+      "sha256": "fc92d825dbaccf1f100be9cbe9f04736c117e57af2bd06bf0ff9745718a3f28b"
+    },
+    {
+      "file": "efel_py_pinned.py",
+      "url": "https://raw.githubusercontent.com/BlueBrain/eFEL/1b6c129dd0de1e782ee70777a92d642898af28b5/efel/pyfeatures/pyfeatures.py",
+      "sha256": "0f51c0b4b56fcbeaea68f6fc50ac64741ecc7ed8d548f7131b77d41cc272e346"
+    },
+    {
+      "file": "allen-bioc.xml",
+      "url": "https://www.ncbi.nlm.nih.gov/research/bionlp/RESTful/pmcoa.cgi/BioC_xml/PMC8078853/unicode",
+      "sha256": "bee927909f001fe9122aba8d08420ce6d972c697e690d57f35f5cab82806f1a6"
+    },
+    {
+      "file": "lazic2010.xml",
+      "url": "https://www.ebi.ac.uk/europepmc/webservices/rest/PMC2817684/fullTextXML",
+      "sha256": "56d6c5b8d67d49791f69547c44449f769f4d8a2f629523ef3f6b93c2c49e7a16"
+    },
+    {
+      "file": "leakage2023.xml",
+      "url": "https://www.ebi.ac.uk/europepmc/webservices/rest/PMC10499856/fullTextXML",
+      "sha256": "aab2d4bcc58efe6f47827cef74247ba6fad59b131e13a87e469364ac68383908"
+    },
+    {
+      "file": "bluepyopt2016.xml",
+      "url": "https://www.ebi.ac.uk/europepmc/webservices/rest/PMC4896051/fullTextXML",
+      "sha256": "5e82411862cb44d25043c17931eb986fd9417a5b83444431facd1ffabf6c4aeb"
+    },
+    {
+      "file": "efel-features-pinned.rst",
+      "url": "https://raw.githubusercontent.com/BlueBrain/eFEL/1b6c129dd0de1e782ee70777a92d642898af28b5/docs/source/eFeatures.rst",
+      "sha256": "7c753a3094e2fcd428b8ffbb991f34538a4970c5f38615ca11d971ef6b3d3f93"
+    }
+  ]
+}

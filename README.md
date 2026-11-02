@@ -29,7 +29,7 @@ The agent should use actual Python output for numerical results, record the code
 
 The current priority is the Python analysis core, command-line interface, and analysis scripts. The existing Qt/PySide6 desktop interface is retained; further UI feature development and routine manual application packaging are paused until explicitly requested. The existing CI tests and macOS packaging workflow remain in place and can still produce application artifacts on pushes.
 
-This documentation update does not change the analysis algorithm or remove desktop functionality.
+The current method review adds reproducibility metadata while preserving the numerical algorithm and retained desktop functionality.
 
 ## Available analysis
 
@@ -45,12 +45,12 @@ Default detection settings are a minimum peak of −20 mV, prominence of 20 mV, 
 
 - `spikes.csv`: one row per retained event. Empty values mean unavailable measurements, not zero. Quality flags do not automatically exclude events.
 - `sweeps.csv`: one row per analyzed sweep, with analysis windows, baseline, counts, firing rate, metric means, and valid measurement counts.
-- `analysis.json`: software/method/dependency versions, parameters, excluded peak times, warnings, summaries, and source-file SHA256 hashes. It contains local paths; review these before sharing.
+- `analysis.json`: software/method/dependency versions, parameters, excluded peak times, warnings, summaries, source-file SHA256 hashes, the complete metric method/citation manifest, and the analysis module SHA256. It contains local paths; review these before sharing.
 - `review.png`: an overview of at most the first 12 analyzed sweeps. The CSV files contain all analyzed sweeps. Long traces use extrema-preserving downsampling; the overview does not replace detailed waveform review.
 
 The built-in export records software and method versions, but not the Git commit. For reproducible agent-run analyses, also save the repository commit, relevant uncommitted changes or script snapshot, environment, and execution details with the results.
 
-Half-width is measured halfway between the dV/dt threshold voltage and peak voltage. AHP depth is reported relative to both threshold and baseline. First-peak latency is measured from the selected analysis start, not an automatically detected stimulus onset. See the [measurement definitions (Chinese)](docs/measurement-definitions.md) for the full method.
+Half-width is measured halfway between the dV/dt threshold voltage and peak voltage. AHP depth is reported relative to both threshold and baseline. First-peak latency is measured from the selected analysis start, not an automatically detected stimulus onset. See the [measurement definitions (Chinese)](docs/measurement-definitions.md) for the full method. The [complete literature and source audit](docs/method-review.md) covers every existing metric and summary, explains differences from IPFX/eFEL, and sets out a conditional ML evaluation plan. [中文解读](docs/method-review.zh-CN.md). No ML model is currently used or trained; laboratory validation remains pending.
 
 ## Python execution reference
 

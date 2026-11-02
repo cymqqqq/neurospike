@@ -1,17 +1,20 @@
 import csv
 import hashlib
 import json
+from dataclasses import fields
+from pathlib import Path
 
 import numpy as np
 import pyabf
 import pytest
 from pyabf.abfWriter import writeABF1
 
-from neurospike.analysis import AnalysisConfig, analyze
+from neurospike.analysis import AnalysisConfig, Spike, analyze
 from neurospike.cli import main
 from neurospike.demo import demo_recording
 from neurospike.export import export_bundle
 from neurospike.io import abf_channels, load_recording
+from neurospike.methods import method_manifest
 
 
 def test_real_abf_binary_round_trip_with_scaling_and_sweeps(tmp_path):
@@ -93,6 +96,56 @@ def test_export_no_overwrite_and_records_manual_exclusion(tmp_path):
         assert len(list(csv.DictReader(f))) == 2
     with pytest.raises(FileExistsError):
         export_bundle([result], output)
+
+
+def test_export_carries_complete_method_audit_and_actual_nondefault_settings(tmp_path):
+    cfg = AnalysisConfig(
+        start_s=0.05,
+        end_s=0.4,
+        baseline_start_s=0,
+        baseline_end_s=0.04,
+        dvdt_threshold_mv_ms=15,
+        ahp_window_ms=12,
+        smoothing_ms=0.1,
+    )
+    result = analyze(demo_recording().traces[0], cfg)
+    output = export_bundle([result], tmp_path / "audited")
+    metadata = json.loads((output / "analysis.json").read_text())
+    manifest = metadata["method_manifest"]
+    assert metadata["method_version"] == manifest["method_version"] == "ap-dvdt-1"
+    provenance = {"source", "sweep", "channel", "spike_number", "flags"}
+    for field in fields(Spike):
+        if field.name not in provenance:
+            assert field.name in manifest["metrics"]
+    for name in result.summary:
+        if name.startswith(("mean_", "n_")) or name in (
+            "spike_count",
+            "firing_rate_hz",
+            "first_peak_latency_ms",
+            "isi_cv",
+            "last_over_first_isi",
+            "baseline_mv",
+            "flagged_spike_count",
+        ):
+            assert name in manifest["metrics"]
+    for metric in manifest["metrics"].values():
+        assert metric["definition"] and metric["unit"]
+        for ref in metric["references"]:
+            assert manifest["references"][ref]["url"].startswith("https://")
+    saved = metadata["analyses"][0]
+    assert saved["config"]["dvdt_threshold_mv_ms"] == 15
+    assert saved["config"]["ahp_window_ms"] == 12
+    assert saved["summary"]["smoothing_window_samples"] > 0
+    import neurospike.analysis
+
+    assert (
+        metadata["analysis_code_sha256"]
+        == hashlib.sha256(Path(neurospike.analysis.__file__).read_bytes()).hexdigest()
+    )
+    # Callers must not be able to contaminate later exports by editing a manifest.
+    manifest = method_manifest()
+    manifest["metrics"]["isi_cv"]["unit"] = "corrupted"
+    assert method_manifest()["metrics"]["isi_cv"]["unit"] == "dimensionless"
 
 
 def test_cli_end_to_end_and_error_status(tmp_path):

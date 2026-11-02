@@ -13,8 +13,7 @@ from pathlib import Path
 
 from . import __version__
 from .analysis import AnalysisResult, Spike
-
-METHOD_VERSION = "ap-dvdt-1"
+from .methods import METHOD_VERSION, method_manifest
 
 
 def _write_csv(path, rows, columns):
@@ -117,6 +116,8 @@ def export_bundle(results: list[AnalysisResult], destination):
             "software": "NeuroSpike",
             "software_version": __version__,
             "method_version": METHOD_VERSION,
+            "method_manifest": method_manifest(),
+            "analysis_code_sha256": _sha256(Path(__file__).with_name("analysis.py")),
             "created_utc": datetime.now(timezone.utc).isoformat(),
             "python": platform.python_version(),
             "dependencies": {name: version(name) for name in ("numpy", "scipy", "pyabf")},
@@ -140,7 +141,7 @@ def export_bundle(results: list[AnalysisResult], destination):
         save_review_plot(results, staging / "review.png")
         (staging / "说明.txt").write_text(
             "spikes.csv：逐个动作电位；sweeps.csv：逐个 sweep。\n"
-            "analysis.json：参数、手动排除、警告、源文件哈希和软件版本。\n"
+            "analysis.json：参数、手动排除、警告、源文件哈希、方法定义/依据和分析代码哈希。\n"
             "review.png：最多前 12 个 sweep 的概览，不能替代放大检查。\n"
             "空白值表示该项无法测量，不代表零。flags 为质量提示，带提示的波形仍计入，除非手动排除。\n"
             "本软件没有自动识别刺激伪迹或读取刺激电流，潜伏期相对于手动分析起点。\n"
