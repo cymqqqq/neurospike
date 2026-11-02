@@ -41,3 +41,11 @@ GitHub CI 状态以该仓库 Actions 页面实时结果为准，本记录不把�
 Two local laboratory ABF2 recordings exercised loading, all-sweep analysis, parameter sensitivity and exports. Raw files, experiment-derived results/plots, protocol paths and cell identifiers are not committed. These executions test integration; no manually annotated event/parameter truth is available, so they do not establish precision, recall or Clampfit equivalence.
 
 This follow-up identified and addressed two review gaps: all sweeps now have paginated PNGs and page-to-source indexes; optional `--sensitivity-review` reports alternative candidate counts/times without altering primary measurements. The `inspect` command checks enabled ABF2 DACs independently of the ADC index, because a stimulated DAC can differ from the recorded ADC. Header levels remain uncalibrated command values and unknown units remain unknown. No automatic current/stimulus-window selection was added. Regression fixtures reproduce these failure modes using synthetic data/mocked header structures; private recordings are not CI dependencies.
+
+## 2026-11-02 人工复核草稿与开发计划
+
+新增 review-create/review-validate：从既有导出生成源文件哈希绑定的复核表，允许部分填写，校验标签、标注人、理由及身份错配；输出覆盖率，暂不应用标签。旧 AP 算法和 Qt 功能未改变。
+
+本地 macOS/Python 3.12 验证：55 项测试通过（其中 10 项新增复核工作流/失败场景测试），ruff 检查和格式检查通过，sdist/wheel 构建成功。保留现有 GUI 无窗口测试。合成数据测试证明流程行为，不代表实验判断准确性。
+
+本地实验记录另存了完整 sweep 复核草稿、宽松检测独有候选及原始片段图，源文件哈希均核对；人工判断尚未提供。不提交真实记录、实验结果或生物身份至公开仓库。官方 Clampfit 功能差距及后续验收见 [roadmap.zh-CN.md](roadmap.zh-CN.md)。

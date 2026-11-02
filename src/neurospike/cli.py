@@ -18,6 +18,13 @@ def main(argv=None):
         "inspect", help="检查 ABF2 所有启用的 DAC 协议，不自动选择分析窗"
     )
     inspect_parser.add_argument("file", type=Path)
+    review_parser = sub.add_parser("review-create", help="从已有结果生成可校验的人工复核表")
+    review_parser.add_argument("bundles", nargs="+", type=Path)
+    review_parser.add_argument("--output", required=True, type=Path)
+    review_parser.add_argument("--detection-review", type=Path)
+    validate_parser = sub.add_parser("review-validate", help="检查复核标注和覆盖率，不修改测量")
+    validate_parser.add_argument("packet", type=Path)
+    validate_parser.add_argument("--output", type=Path, help="另存 JSON 报告，不覆盖已有文件")
     analyze_parser = sub.add_parser("analyze", help="分析一个或多个文件")
     analyze_parser.add_argument("files", nargs="+", type=Path)
     demo_parser = sub.add_parser("demo", help="分析已知事件的合成演示记录")
@@ -56,6 +63,25 @@ def main(argv=None):
     try:
         if args.command == "inspect":
             print(json.dumps(abf_protocol_metadata(args.file), ensure_ascii=False, indent=2))
+            return 0
+        if args.command == "review-create":
+            from .annotations import create_review_packet
+
+            print(
+                create_review_packet(
+                    args.bundles, args.output, detection_file=args.detection_review
+                )
+            )
+            return 0
+        if args.command == "review-validate":
+            from .annotations import validate_review_packet
+
+            report = validate_review_packet(args.packet)
+            text = json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False)
+            if args.output:
+                with args.output.open("x", encoding="utf-8") as f:
+                    f.write(text + "\n")
+            print(text)
             return 0
         config = AnalysisConfig(
             start_s=args.start,

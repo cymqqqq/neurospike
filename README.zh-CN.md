@@ -24,6 +24,8 @@
 
 代理应以真实 Python 输出作为数值依据，记录代码版本与参数，说明失败文件和不确定的测量，不能把同一细胞的多个 sweep 当作独立生物学重复。实验数据和结果默认不上传 GitHub；对话平台如何处理数据取决于实际平台和执行环境。
 
+本轮新增可核对源文件哈希的人工复核表和覆盖率校验，见[复核流程](docs/review-workflow.md)。[中文开发计划](docs/roadmap.zh-CN.md)（[English](docs/roadmap.md)）按官方 Clampfit 11/11.4 功能说明整理了缺口、开发顺序和验收条件。标注不会自动改动原始测量，也不构成完整事件真值。
+
 ## 项目状态
 
 当前优先发展 Python 分析内核、命令行入口和分析脚本。已有 Qt/PySide6 桌面界面保留；暂停新增界面功能和例行手动应用打包，直到明确要求恢复。已有 CI 测试和 macOS 打包工作流继续保留，推送后仍可能自动生成应用产物。
@@ -133,3 +135,13 @@ python -m build
 [GitHub Actions](https://github.com/cymqqqq/neurospike/actions) 在 Linux、macOS 执行检查和测试；已有 macOS 任务还会打包应用，无窗口验证 ABF 读取与 CSV/JSON/PNG 导出，并保存 Actions artifact，不公开发布 Release 或部署服务。
 
 模块职责和首版验收范围见 [设计记录](docs/implementation-plan.md)。该文件描述最初以桌面为主的版本，当前以直接分析为主的方向以本 README 为准。仓库现为 public；公开可见不等于授予开源许可证，本次未添加许可证。
+
+## 人工复核表（由代理运行）
+
+```bash
+neurospike review-create results/cell --detection-review results/cell/detection-review.json \
+  --output results/review
+neurospike review-validate results/review --output results/review/coverage.json
+```
+
+源文件须仍可读取且哈希匹配；空白为待复核。用户只需给出人工判断，代理可负责填表并校验。表格覆盖全部 sweep 以及可选的宽松检测独有候选，尚不覆盖完整区间所有事件；校验不会剔除或补加事件，也不会训练监督模型。具体标签和要求见[复核说明](docs/review-workflow.md)。

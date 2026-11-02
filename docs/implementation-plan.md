@@ -1,5 +1,7 @@
 # 第一版需求与工程设计
 
+此文档保留最初桌面版设计记录。当前以 Python 分析为主，Qt 开发暂停；最新功能缺口、优先级和验收见[开发计划](roadmap.zh-CN.md)（[English](roadmap.md)）。
+
 用户：不编程的神经科学实验研究者。平台：macOS。主要数据：pCLAMP ABF。范围：电流钳诱发和自发动作电位分析，不包括采集硬件控制。
 
 选择 Python：NumPy/SciPy 提供可独立验证的数值实现，pyABF 负责 ABF 兼容，Qt/PySide6 与 pyqtgraph 提供本地桌面交互。架构采用一个桌面应用与共享计算内核，避免不必要的服务器或数据库。结果用标准 CSV/JSON，便于后续用 Excel、Prism 或 Python 统计。

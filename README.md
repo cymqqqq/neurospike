@@ -31,12 +31,15 @@ The current priority is the Python analysis core, command-line interface, and an
 
 The current method review adds reproducibility metadata while preserving the numerical algorithm and retained desktop functionality.
 
+The [development roadmap](docs/roadmap.md) ([中文](docs/roadmap.zh-CN.md)) compares current capabilities with official Clampfit 11/11.4 descriptions and defines phased acceptance criteria. New local annotation packets support provenance checks and review coverage; see [review workflow](docs/review-workflow.md).
+
 ## Available analysis
 
 - Read ABF1 and ABF2 recordings, select a voltage channel, and analyze individual or multiple sweeps. CSV, TSV, and header-based TXT files are also supported.
 - Measure spike count, interval firing rate, peak time/voltage, dV/dt threshold, threshold-to-peak amplitude, half-width, threshold-to-peak rise time, maximum upstroke/downstroke rates, and AHP trough time/voltage/depth.
 - Report interspike intervals (ISI), instantaneous frequency, ISI coefficient of variation, and the last/first ISI ratio.
 - Export per-spike and per-sweep CSV files, JSON analysis metadata with source-file hashes, and a PNG overview.
+- Create source-hash-bound review CSVs from existing exports and validate partial human annotations without modifying measurements.
 - Retain quality flags and missing values when a measurement cannot be reliably determined. The Python API supports explicit exclusion of detected peaks; the retained Qt interface also provides exclusion controls.
 
 Default detection settings are a minimum peak of −20 mV, prominence of 20 mV, dV/dt threshold of 20 mV/ms, and minimum peak separation of 2 ms. Smoothing is disabled by default. These settings require review for the recorded cell type and protocol.
@@ -88,6 +91,16 @@ Use `--sensitivity-review` to add `detection-review.json`: it compares a lower h
 ### Optional experimental ML review
 
 Install `python -m pip install -e '.[ml]'` and add `--ml-review` to `analyze`. This also enables sensitivity review and writes `quality-review.json`. It fits an Isolation Forest on the supplied batch's sweep features to rank atypical recordings, alongside explicit heuristic review cues. Use compatible protocols/windows. Scores are relative to that fitted batch, not failure probabilities or diagnoses; no events are removed or corrected. At least 20 eligible sweeps and five distinct feature vectors are required for an exploratory fit; these are software guards, not scientific sample-size requirements. Manual-exclusion/failed-sensitivity rows are not scored. Default execution uses no ML. See [definitions, limitations and validation requirements](docs/ml-review.md).
+
+### Human review drafts
+
+```bash
+neurospike review-create results/cell --detection-review results/cell/detection-review.json \
+  --output results/review
+neurospike review-validate results/review --output results/review/coverage.json
+```
+
+The source files must remain available with matching hashes. Blank judgments stay pending. Review covers all sweeps and, if supplied, relaxed-only candidate events; it is not complete event ground truth. Validation does not apply labels or train a model. See the [annotation protocol](docs/review-workflow.md).
 
 ### Python API
 

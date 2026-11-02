@@ -1,0 +1,22 @@
+{
+  "accessed": "2026-11-02",
+  "scope": "Vendor product-page inventory, not algorithm validation or exhaustive version parity",
+  "sources": [
+    {
+      "id": "md-pclamp11",
+      "url": "https://www.moleculardevices.com/products/axon-patch-clamp-system/acquisition-and-analysis-software/pclamp-software-suite",
+      "title": "pCLAMP 11 Software Suite, Minis Search",
+      "retrieval": "Official HTML product page read through terminal HTTP client",
+      "sha256": "379e18154188c2d52ded64eac32335736f5552e8cc3232ecb92f6cb02c98858b",
+      "locations": [
+        "NEW Minis Analysis Feature",
+        "Comprehensive analysis tools",
+        "Population spike analysis",
+        "Action potential analysis",
+        "Batch analysis",
+        "FAQs: filtering multiple single-channel recordings"
+      ],
+      "limits": "Marketing overview; methods/manual comparison remains pending. Clampex acquisition content excluded."
+    }
+  ]
+}
