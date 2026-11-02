@@ -49,3 +49,5 @@ This follow-up identified and addressed two review gaps: all sweeps now have pag
 本地 macOS/Python 3.12 验证：55 项测试通过（其中 10 项新增复核工作流/失败场景测试），ruff 检查和格式检查通过，sdist/wheel 构建成功。保留现有 GUI 无窗口测试。合成数据测试证明流程行为，不代表实验判断准确性。
 
 本地实验记录另存了完整 sweep 复核草稿、宽松检测独有候选及原始片段图，源文件哈希均核对；人工判断尚未提供。不提交真实记录、实验结果或生物身份至公开仓库。官方 Clampfit 功能差距及后续验收见 [roadmap.zh-CN.md](roadmap.zh-CN.md)。
+
+检查上一轮远程日志发现 macOS 首次字体缓存构建超过 GUI 后台导出测试的 15 秒等待期限。测试初始化现于计时前加载字体管理器，保留原后台线程、回调和文件导出断言；不修改生产 GUI 或放宽工作线程等待期限。使用全新字体缓存目录再次运行 GUI 测试验证。

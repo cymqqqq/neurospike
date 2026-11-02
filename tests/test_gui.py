@@ -12,6 +12,11 @@ from neurospike.gui import MainWindow  # noqa: E402
 
 @pytest.fixture(scope="session")
 def qt_app():
+    # First-time macOS font discovery can exceed the worker deadline. Perform
+    # environment setup before timing background export/callback completion.
+    from matplotlib import font_manager
+
+    font_manager.findfont(font_manager.FontProperties())
     app = QApplication.instance() or QApplication([])
     yield app
 
