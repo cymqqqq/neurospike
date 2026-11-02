@@ -39,6 +39,11 @@ def main(argv=None):
             action="store_true",
             help="另存检测参数敏感性报告；不更改主分析结果",
         )
+        item.add_argument(
+            "--ml-review",
+            action="store_true",
+            help="试验性无监督复核排序；需要 ml 可选依赖，不改变主结果",
+        )
     analyze_parser.add_argument("--channel", type=int, default=0, help="ABF 通道，从 0 开始")
     analyze_parser.add_argument("--time-unit", choices=["s", "ms"])
     analyze_parser.add_argument("--voltage-unit", choices=["mV", "V", "uV"])
@@ -79,7 +84,12 @@ def main(argv=None):
             ]
         )
         results = [analyze(trace, config) for recording in recordings for trace in recording.traces]
-        output = export_bundle(results, args.output, sensitivity_review=args.sensitivity_review)
+        output = export_bundle(
+            results,
+            args.output,
+            sensitivity_review=args.sensitivity_review,
+            ml_review=args.ml_review,
+        )
         for result in results:
             print(
                 f"{Path(result.trace.source).name} sweep={result.trace.sweep}: "

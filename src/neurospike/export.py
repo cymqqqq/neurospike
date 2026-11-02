@@ -94,7 +94,9 @@ def save_review_plot(results, path):
     fig.savefig(path, dpi=130)
 
 
-def export_bundle(results: list[AnalysisResult], destination, *, sensitivity_review=False):
+def export_bundle(
+    results: list[AnalysisResult], destination, *, sensitivity_review=False, ml_review=False
+):
     if not results:
         raise ValueError("没有分析结果可以导出。")
     destination = Path(destination).resolve()
@@ -132,10 +134,21 @@ def export_bundle(results: list[AnalysisResult], destination, *, sensitivity_rev
                     ],
                 }
             )
-        if sensitivity_review:
+        if sensitivity_review or ml_review:
+            sensitivity = detection_review(results)
             (staging / "detection-review.json").write_text(
+                json.dumps(sensitivity, ensure_ascii=False, indent=2, allow_nan=False),
+                encoding="utf-8",
+            )
+        if ml_review:
+            from .quality import quality_review
+
+            (staging / "quality-review.json").write_text(
                 json.dumps(
-                    detection_review(results), ensure_ascii=False, indent=2, allow_nan=False
+                    quality_review(results, sensitivity, machine_learning=True),
+                    ensure_ascii=False,
+                    indent=2,
+                    allow_nan=False,
                 ),
                 encoding="utf-8",
             )
@@ -146,7 +159,10 @@ def export_bundle(results: list[AnalysisResult], destination, *, sensitivity_rev
             "method_manifest": method_manifest(),
             "analysis_code_sha256": _sha256(Path(__file__).with_name("analysis.py")),
             "review_pages": review_pages,
-            "detection_review_file": "detection-review.json" if sensitivity_review else None,
+            "detection_review_file": "detection-review.json"
+            if sensitivity_review or ml_review
+            else None,
+            "quality_review_file": "quality-review.json" if ml_review else None,
             "created_utc": datetime.now(timezone.utc).isoformat(),
             "python": platform.python_version(),
             "dependencies": {name: version(name) for name in ("numpy", "scipy", "pyabf")},

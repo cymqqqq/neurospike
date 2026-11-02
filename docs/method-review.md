@@ -328,7 +328,7 @@ For example, ISIs of 20 and 40 ms give a mean of 30 ms, sample CV about 0.4714 a
 
 ## Machine learning decision
 
-**Do not add a trained model to the measurement path yet.** There is no laboratory annotation set, independent test set or demonstrated rule-based failure rate. Exact definitions and reproducible formulas address the current problem. No ML dependencies were added and no model was trained.
+**Do not add a trained model to the measurement path yet.** There is no laboratory annotation set, independent test set or demonstrated rule-based failure rate. Exact definitions and reproducible formulas address the current problem. The original audit added no ML. A later follow-up adds optional exploratory Isolation Forest review ranking, documented in [ML review](ml-review.md); no supervised detection/measurement model or validated accuracy improvement is claimed.
 
 The first useful candidate is an optional quality-review assistant: score suspected stimulation artifacts, clipped events and possible missed spikes, then prioritize human review. Keep waveform measurements deterministic and preserve raw data. A supervised model may eventually help when artifacts resemble spikes or fixed thresholds miss variable amplitudes; that benefit must be measured, not assumed. A model must search unselected segments too if it is intended to improve recall. Clustering cell-level features can later explore phenotypes under matched protocols; clusters alone do not establish biological cell types. Gouwens 2019 provides an example of feature reduction and stability-tested clustering, not proof that this application's future clusters will be valid.
 

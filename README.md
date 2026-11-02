@@ -50,7 +50,7 @@ Default detection settings are a minimum peak of −20 mV, prominence of 20 mV, 
 
 The built-in export records software and method versions, but not the Git commit. For reproducible agent-run analyses, also save the repository commit, relevant uncommitted changes or script snapshot, environment, and execution details with the results.
 
-Half-width is measured halfway between the dV/dt threshold voltage and peak voltage. AHP depth is reported relative to both threshold and baseline. First-peak latency is measured from the selected analysis start, not an automatically detected stimulus onset. See the [measurement definitions (Chinese)](docs/measurement-definitions.md) for the full method. The [complete literature and source audit](docs/method-review.md) covers every existing metric and summary, explains differences from IPFX/eFEL, and sets out a conditional ML evaluation plan. [中文解读](docs/method-review.zh-CN.md). No ML model is currently used or trained; laboratory validation remains pending.
+Half-width is measured halfway between the dV/dt threshold voltage and peak voltage. AHP depth is reported relative to both threshold and baseline. First-peak latency is measured from the selected analysis start, not an automatically detected stimulus onset. See the [measurement definitions (Chinese)](docs/measurement-definitions.md) for the full method. The [complete literature and source audit](docs/method-review.md) covers every existing metric and summary, explains differences from IPFX/eFEL, and sets out a conditional ML evaluation plan. [中文解读](docs/method-review.zh-CN.md). Optional experimental ML now ranks sweeps for review; it never replaces these measurements. Laboratory accuracy and ML benefit remain unvalidated. See [ML review](docs/ml-review.md).
 
 ## Python execution reference
 
@@ -84,6 +84,10 @@ Use an explicit `analyze` or `demo` subcommand for headless execution. Running `
 Analysis and baseline windows are in seconds. `--refractory`, `--lookback`, `--ahp-window`, and `--smooth` use milliseconds; `--dvdt` uses mV/ms. ABF channels are zero-indexed. The output directory must not already exist. A multi-file invocation fails as a whole on invalid input; it does not silently skip failed files. Shared windows and settings must be valid for every selected sweep.
 
 Use `--sensitivity-review` to add `detection-review.json`: it compares a lower height/prominence preset and 0.15 ms Savitzky–Golay smoothing with the primary detector, recording candidate counts and unmatched times. It does not alter primary measurements or estimate accuracy. Manual exclusions skip comparison because filtering can shift event times. `neurospike inspect` examines every enabled ABF2 DAC independently of the recorded ADC index. An ADC 0 voltage recording may use DAC 3 for stimulation; the default pyABF command for ADC 0 can then be flat. The inspection reports header epoch timing/levels, unsupported waveform sources and unknown units without selecting an analysis window or interpreting DAC levels as measured current. Protocol names alone are insufficient to recover stimulus timing/current.
+
+### Optional experimental ML review
+
+Install `python -m pip install -e '.[ml]'` and add `--ml-review` to `analyze`. This also enables sensitivity review and writes `quality-review.json`. It fits an Isolation Forest on the supplied batch's sweep features to rank atypical recordings, alongside explicit heuristic review cues. Use compatible protocols/windows. Scores are relative to that fitted batch, not failure probabilities or diagnoses; no events are removed or corrected. At least 20 eligible sweeps and five distinct feature vectors are required for an exploratory fit; these are software guards, not scientific sample-size requirements. Manual-exclusion/failed-sensitivity rows are not scored. Default execution uses no ML. See [definitions, limitations and validation requirements](docs/ml-review.md).
 
 ### Python API
 

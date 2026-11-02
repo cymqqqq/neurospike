@@ -49,7 +49,7 @@
 
 当前内置导出记录软件和方法版本，尚不自动记录 Git commit。代理执行分析时应额外保存仓库提交号、影响计算的未提交修改或脚本快照、环境及执行信息。
 
-半峰宽取 dV/dt 阈值电位与峰值电位之间一半幅度处的宽度；AHP 同时报告相对阈值和基线的深度。首峰潜伏期相对所选分析起点计算，不是自动识别的刺激起点。完整方法见 [测量定义](docs/measurement-definitions.md)；新增 [全部参数核实与机器学习评估](docs/method-review.zh-CN.md) 和 [英文逐字段文献/源码审查](docs/method-review.md)。目前未使用或训练 ML 模型，实验室数据准确性仍待验证。
+半峰宽取 dV/dt 阈值电位与峰值电位之间一半幅度处的宽度；AHP 同时报告相对阈值和基线的深度。首峰潜伏期相对所选分析起点计算，不是自动识别的刺激起点。完整方法见 [测量定义](docs/measurement-definitions.md)；新增 [全部参数核实与机器学习评估](docs/method-review.zh-CN.md) 和 [英文逐字段文献/源码审查](docs/method-review.md)。目前可选的试验性 ML 仅用于 sweep 复核排序，不替代参数测量；准确性和实际收益仍待验证，见 [机器学习复核说明](docs/ml-review.md)。
 
 ## Python 执行参考
 
@@ -83,6 +83,10 @@ neurospike analyze /path/to/data.csv --time-unit ms --voltage-unit mV --output r
 分析区间和基线区间单位为秒；`--refractory`、`--lookback`、`--ahp-window`、`--smooth` 单位为毫秒，`--dvdt` 为 mV/ms。ABF 通道从 0 开始。输出目录必须不存在。多文件调用遇到无效输入时整体失败，不悄悄跳过文件。共用区间和参数必须适用于每个选中的 sweep。
 
 使用 `--sensitivity-review` 可额外生成 `detection-review.json`，比较较低峰高/突出度预设及 0.15 ms Savitzky–Golay 平滑的检出数量和未匹配峰时间，不更改主结果，不代表准确率。存在手动排除项时跳过比较，避免滤波移位后误用排除时间。`neurospike inspect` 独立检查所有启用的 ABF2 DAC：记录 ADC 0 不代表刺激也在 DAC 0，DAC 3 刺激时常规命令读取可能为零。检查报告头信息的 epoch 时间/幅值、未知单位和不支持的波形来源，不自动选择分析窗，也不把 DAC 幅值当作实测电流。协议名称不能代替刺激时序/电流证据。
+
+### 可选的试验性机器学习复核
+
+安装 `python -m pip install -e '.[ml]'` 后，为 `analyze` 添加 `--ml-review`，会同时启用检测敏感性检查并输出 `quality-review.json`。Isolation Forest 根据本批 sweep 特征拟合并排序，另列可解释的规则提示。仅在兼容协议/时间窗内比较，分数不代表失败概率或诊断，不更改/删除事件。至少 20 条可评分 sweep 和 5 个不同特征向量才拟合，这是软件保护条件，不是科学样本量标准。手动排除或敏感性失败的记录不评分。默认运行不使用 ML，定义和限制见 [机器学习复核说明](docs/ml-review.md)。
 
 ### Python API
 
